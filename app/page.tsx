@@ -1,5 +1,5 @@
 "use client";
-
+export const dynamic = "force-dynamic";  // ← agregar esta línea
 import { useState, useCallback, useRef } from "react";
 import { signInWithPopup, signOut, User, GoogleAuthProvider } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
