@@ -88,7 +88,7 @@ Recordá devolver ÚNICAMENTE el JSON, sin texto adicional.
 
     // 3. Llamar a Claude
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],
