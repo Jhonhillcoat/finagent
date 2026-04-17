@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";  // ← agregar esta línea
 import { useState, useCallback, useRef } from "react";
 import { signInWithPopup, signOut, User, GoogleAuthProvider } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { getFirebaseAuth, googleProvider } from "@/lib/firebase";
 import Dashboard from "@/components/Dashboard";
 import { UploadCloud, LogIn, LogOut, FileSpreadsheet, FileText, X, Loader2, TrendingUp } from "lucide-react";
 
@@ -21,6 +21,7 @@ type FileItem = {
 type AnalysisResult = any;
 
 export default function Home() {
+  const auth = getFirebaseAuth();
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string>("");
   const [files, setFiles] = useState<FileItem[]>([]);

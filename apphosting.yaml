@@ -4,3 +4,6 @@ runConfig:
   minInstances: 0
   maxInstances: 3
   concurrency: 80
+env:
+  - variable: ANTHROPIC_API_KEY
+    secret: ANTHROPIC_API_KEY
