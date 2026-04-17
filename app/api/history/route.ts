@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 401 });
+  const userId = req.nextUrl.searchParams.get("userId") ?? "anonymous";
 
   const snap = await adminDb
     .collection("users")

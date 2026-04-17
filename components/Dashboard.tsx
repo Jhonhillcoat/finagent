@@ -1,6 +1,4 @@
 "use client";
-
-import { User } from "firebase/auth";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   RadialBarChart, RadialBar, Tooltip, ResponsiveContainer,
@@ -8,7 +6,7 @@ import {
 } from "recharts";
 import {
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle2,
-  LogOut, RotateCcw, Wallet, PiggyBank, CreditCard, Activity,
+  RotateCcw, Wallet, PiggyBank, CreditCard, Activity,
   ChevronRight, ArrowUpRight, ArrowDownRight, Shield,
 } from "lucide-react";
 
@@ -105,11 +103,9 @@ function CustomTooltip({ active, payload, label }: any) {
 
 // ── Main Dashboard ─────────────────────────────────────────────
 export default function Dashboard({
-  data, user, onLogout, onNewAnalysis,
+  data, onNewAnalysis,
 }: {
   data: any;
-  user: User;
-  onLogout: () => void;
   onNewAnalysis: () => void;
 }) {
   const { metricas: m, score, perfil_riesgo, resumen_ejecutivo,
@@ -144,14 +140,10 @@ export default function Dashboard({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {user.photoURL && <img src={user.photoURL} className="w-7 h-7 rounded-full" alt="" />}
           <button onClick={onNewAnalysis}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
             style={{ background: "var(--text)", color: "white" }}>
             <RotateCcw size={12} /> Nuevo análisis
-          </button>
-          <button onClick={onLogout} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <LogOut size={14} style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
       </header>
