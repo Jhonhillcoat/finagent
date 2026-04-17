@@ -156,3 +156,4 @@ a `/api/history?userId=...` para ver análisis anteriores y comparar.
 | Cloud Run | Solo si superás el free tier | ~$0 para uso personal |
 
 **Total estimado: < $1 USD/mes para uso personal.**
+  
