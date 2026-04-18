@@ -1,17 +1,4 @@
 {
-  "hosting": {
-    "public": "public",
-    "cleanUrls": true,
-    "rewrites": [
-      {
-        "source": "**",
-        "run": {
-          "serviceId": "finagent",
-          "region": "us-central1"
-        }
-      }
-    ]
-  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

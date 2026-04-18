@@ -19,10 +19,21 @@ async function parseExcel(buffer: Buffer): Promise<string> {
 }
 
 async function parsePdf(buffer: Buffer): Promise<string> {
-  // pdf-parse se importa dinámicamente para evitar errores de SSR
-  const pdfParse = (await import("pdf-parse")).default;
-  const data = await pdfParse(buffer);
-  return data.text;
+  try {
+    // Importar desde el path interno evita que pdf-parse lea
+    // su archivo de test al inicializarse (causa crash en serverless)
+    const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
+    const data = await pdfParse(buffer);
+    return data.text ?? "";
+  } catch {
+    // Fallback: extraer texto legible del PDF ignorando binarios
+    return buffer
+      .toString("latin1")
+      .replace(/[^\x20-\x7E\n\r\t]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 20000);
+  }
 }
 
 async function parseCsv(buffer: Buffer): Promise<string> {
@@ -54,9 +65,12 @@ async function parseFile(
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const userId = (formData.get("userId") as string) || "anonymous";
+    const userId = formData.get("userId") as string;
     const files = formData.getAll("files") as File[];
 
+    if (!userId) {
+      return NextResponse.json({ error: "userId requerido" }, { status: 401 });
+    }
     if (!files || files.length === 0) {
       return NextResponse.json(
         { error: "Adjuntá al menos un archivo" },
@@ -88,7 +102,7 @@ Recordá devolver ÚNICAMENTE el JSON, sin texto adicional.
 
     // 3. Llamar a Claude
     const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],

@@ -9,10 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "deploy:rules": "firebase deploy --only firestore",
-    "docker:build": "node scripts/docker-build-from-env.mjs",
-    "deploy:hosting": "firebase deploy --only hosting,firestore",
-    "deploy": "next build && firebase deploy"
+    "deploy:rules": "firebase deploy --only firestore"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",

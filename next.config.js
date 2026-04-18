@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
-  experimental: {
-    serverComponentsExternalPackages: ["xlsx", "pdf-parse"],
-  },
+  serverExternalPackages: ["xlsx"],
 };
 
 module.exports = nextConfig;
+
