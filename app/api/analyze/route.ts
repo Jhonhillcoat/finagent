@@ -65,12 +65,8 @@ async function parseFile(
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const userId = formData.get("userId") as string;
+    const userId = (formData.get("userId") as string) || "anonymous";
     const files = formData.getAll("files") as File[];
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId requerido" }, { status: 401 });
-    }
     if (!files || files.length === 0) {
       return NextResponse.json(
         { error: "Adjuntá al menos un archivo" },

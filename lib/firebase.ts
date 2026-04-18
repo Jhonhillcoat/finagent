@@ -1,9 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { Auth, getAuth, GoogleAuthProvider } from "firebase/auth";
 import { Firestore, getFirestore } from "firebase/firestore";
 
 let _app: FirebaseApp | null = null;
-let _auth: Auth | null = null;
 let _db: Firestore | null = null;
 
 function getFirebaseApp(): FirebaseApp {
@@ -20,18 +18,8 @@ function getFirebaseApp(): FirebaseApp {
   return _app;
 }
 
-export function getFirebaseAuth(): Auth {
-  if (_auth) return _auth;
-  _auth = getAuth(getFirebaseApp());
-  return _auth;
-}
-
 export function getFirebaseDb(): Firestore {
   if (_db) return _db;
   _db = getFirestore(getFirebaseApp());
   return _db;
 }
-
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope("https://www.googleapis.com/auth/drive.readonly");
-googleProvider.addScope("https://www.googleapis.com/auth/userinfo.email");

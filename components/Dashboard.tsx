@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { User } from "firebase/auth";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   Tooltip, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Legend,
 } from "recharts";
 import {
-  TrendingUp, AlertTriangle, LogOut, RotateCcw, Wallet,
+  TrendingUp, AlertTriangle, RotateCcw, Wallet,
   PiggyBank, CreditCard, Activity, ChevronRight, ArrowUpRight,
   ArrowDownRight, Shield, MessageCircle, Send, X, Clock,
   ChevronDown, ChevronUp, Loader2,
@@ -346,11 +345,10 @@ function ChatBox({ userId, analysisData }: { userId: string; analysisData: any }
 
 // ── Main Dashboard ─────────────────────────────────────────────
 export default function Dashboard({
-  data, user, onLogout, onNewAnalysis,
+  data, userId, onNewAnalysis,
 }: {
   data: any;
-  user: User;
-  onLogout: () => void;
+  userId: string;
   onNewAnalysis: () => void;
 }) {
   const [currentData, setCurrentData] = useState(data);
@@ -383,14 +381,10 @@ export default function Dashboard({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {user.photoURL && <img src={user.photoURL} className="w-7 h-7 rounded-full" alt="" />}
           <button onClick={onNewAnalysis}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
             style={{ background: "var(--text)", color: "white" }}>
             <RotateCcw size={12} /> Nuevo análisis
-          </button>
-          <button onClick={onLogout} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <LogOut size={14} style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
       </header>
@@ -431,7 +425,7 @@ export default function Dashboard({
         </div>
 
         {/* Historial */}
-        <HistoryPanel userId={user.uid} onSelectAnalysis={(a) => setCurrentData(a)} />
+        <HistoryPanel userId={userId} onSelectAnalysis={(a) => setCurrentData(a)} />
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -593,7 +587,7 @@ export default function Dashboard({
       </div>
 
       {/* Chat flotante */}
-      <ChatBox userId={user.uid} analysisData={currentData} />
+      <ChatBox userId={userId} analysisData={currentData} />
     </div>
   );
 }
