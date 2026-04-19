@@ -31,8 +31,7 @@ async function parsePdf(buffer: Buffer): Promise<string> {
       .toString("latin1")
       .replace(/[^\x20-\x7E\n\r\t]/g, " ")
       .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 20000);
+      .trim();
   }
 }
 
@@ -54,10 +53,10 @@ async function parseFile(
   } else if (["csv", "txt"].includes(ext)) {
     content = await parseCsv(buffer);
   } else {
-    content = buffer.toString("utf-8").slice(0, 10000); // fallback
+    content = buffer.toString("utf-8");
   }
 
-  return { name, content: content.slice(0, 25000) }; // max 25k chars por archivo
+  return { name, content };
 }
 
 // ── Handler principal ────────────────────────────────────────
@@ -88,7 +87,7 @@ export async function POST(req: NextRequest) {
       .join("");
 
     const userMessage = `
-Por favor analizá mis datos financieros de los siguientes archivos y devolvé el JSON completo del diagnóstico.
+Por favor analizá mis datos financieros. El texto debajo es el contenido completo de cada archivo (sin truncar).
 
 ARCHIVOS ADJUNTOS:
 ${filesContent}
