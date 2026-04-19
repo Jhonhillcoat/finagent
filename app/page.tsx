@@ -56,8 +56,8 @@ function Metric({ label, value, sub, danger }: { label: string; value: string; s
   );
 }
 
-// ── Bar ───────────────────────────────────────────────────────
-function Bar({ label, pct: p, color }: { label: string; pct: number; color: string }) {
+// ── Category % bar (not recharts Bar) ─────────────────────────
+function PctBar({ label, pct: p, color }: { label: string; pct: number; color: string }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
@@ -582,7 +582,7 @@ function Dashboard({ data }: { data: Analysis }) {
           <STitle>Estructura de gastos</STitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {(data.gastos_por_categoria ?? []).map((g: any, i: number) => (
-              <Bar key={i} label={g.categoria} pct={g.pct} color={barColors[i % barColors.length]} />
+              <PctBar key={i} label={g.categoria} pct={g.pct} color={barColors[i % barColors.length]} />
             ))}
           </div>
         </Card>

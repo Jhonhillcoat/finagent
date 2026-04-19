@@ -13,13 +13,3 @@ export async function GET() {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
-export async function GET_LAST() {
-  try {
-    const doc = await adminDb.collection("users").doc(OWNER_ID).get();
-    const data = doc.data();
-    return NextResponse.json({ analysis: data?.lastAnalysis ?? null });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
