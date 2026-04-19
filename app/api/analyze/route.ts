@@ -8,14 +8,90 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── Helpers para parsear archivos ────────────────────────────
 
-async function parseExcel(buffer: Buffer): Promise<string> {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const sheets: string[] = [];
-  workbook.SheetNames.forEach((name) => {
-    const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[name]);
-    sheets.push(`=== Hoja: ${name} ===\n${csv}`);
+function escapeTsvCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  if (/[\t\n\r"]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/**
+ * Exporta cada hoja en TSV con:
+ * - lectura con fechas y formatos numéricos (cellDates + cellNF) y celdas vacías en rango (sheetStubs)
+ * - valores mostrados como en Excel (raw: false), no solo números serializados
+ * - todas las columnas del rango alineadas (defval) para no perder posición entre filas
+ * - primera columna = número de fila Excel; cabecera = letras de columna (A, B, …)
+ */
+function parseExcel(buffer: Buffer): string {
+  const workbook = XLSX.read(buffer, {
+    type: "buffer",
+    cellDates: true,
+    cellNF: true,
+    sheetStubs: true,
   });
-  return sheets.join("\n\n");
+
+  const sheetsOut: string[] = [];
+
+  for (const name of workbook.SheetNames) {
+    const sheet = workbook.Sheets[name];
+    const ref = sheet["!ref"];
+    if (!ref) {
+      sheetsOut.push(`=== Hoja: ${name} (sin rango / vacía) ===\n`);
+      continue;
+    }
+
+    const rng = XLSX.utils.decode_range(ref);
+    const ncolsFromRef = rng.e.c - rng.s.c + 1;
+    const nrowsFromRef = rng.e.r - rng.s.r + 1;
+
+    const aoa = XLSX.utils.sheet_to_json<(string | number | boolean | null)[]>(sheet, {
+      header: 1,
+      defval: "",
+      raw: false,
+      blankrows: true,
+      dateNF: "yyyy-mm-dd",
+    });
+
+    const maxColWidth = Math.max(
+      ncolsFromRef,
+      ...aoa.map((row) => (Array.isArray(row) ? row.length : 0)),
+      0
+    );
+
+    const colLabels = Array.from({ length: maxColWidth }, (_, i) =>
+      XLSX.utils.encode_col(rng.s.c + i)
+    );
+
+    const lines: string[] = [
+      `=== Hoja: ${name} ===`,
+      `Rango: ${ref} (${nrowsFromRef} filas × ${ncolsFromRef} columnas según Excel; exportadas ${aoa.length} filas × ${maxColWidth} columnas)`,
+    ];
+
+    const merges = sheet["!merges"] as XLSX.Range[] | undefined;
+    if (merges?.length) {
+      const mergeStr = merges.map((m) => XLSX.utils.encode_range(m)).join("; ");
+      lines.push(`Celdas combinadas: ${mergeStr}`);
+    }
+
+    lines.push(
+      "--- Tabla (TSV: columna 1 = nº de fila en Excel; siguientes columnas = A, B, …) ---"
+    );
+    lines.push(["fila_excel", ...colLabels].join("\t"));
+
+    aoa.forEach((row, i) => {
+      const excelRowNum = rng.s.r + i + 1;
+      const cells: string[] = [];
+      for (let c = 0; c < maxColWidth; c++) {
+        const v = Array.isArray(row) ? row[c] : undefined;
+        cells.push(escapeTsvCell(v ?? ""));
+      }
+      lines.push([String(excelRowNum), ...cells].join("\t"));
+    });
+
+    sheetsOut.push(lines.join("\n"));
+  }
+
+  return sheetsOut.join("\n\n");
 }
 
 async function parsePdf(buffer: Buffer): Promise<string> {
@@ -47,7 +123,7 @@ async function parseFile(
   let content = "";
 
   if (["xlsx", "xls", "xlsm"].includes(ext)) {
-    content = await parseExcel(buffer);
+    content = parseExcel(buffer);
   } else if (ext === "pdf") {
     content = await parsePdf(buffer);
   } else if (["csv", "txt"].includes(ext)) {
