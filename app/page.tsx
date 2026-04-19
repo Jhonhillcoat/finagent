@@ -347,13 +347,9 @@ function HistoryCharts() {
 
   if (loading || history.length < 2) return null;
 
-  // ── Transformar datos ─────────────────────────────────────
-  const label = (h: any) => h.fecha_analisis?.slice(0, 7).replace("-", "/") ?? "—";
+  const label = (h: any): string => h.fecha_analisis?.slice(0, 7).replace("-", "/") ?? "—";
 
-  const scoreData = history.map((h) => ({
-    mes: label(h),
-    score: h.score ?? 0,
-  }));
+  const scoreData = history.map((h) => ({ mes: label(h), score: h.score ?? 0 }));
 
   const flujoData = history.map((h) => ({
     mes: label(h),
@@ -362,25 +358,17 @@ function HistoryCharts() {
     ahorro: Math.round((h.metricas?.superavit_mensual ?? 0) / 1000),
   }));
 
-  const classCols: Record<string, string> = {
-    renta_fija: "Renta fija",
-    cash_usd: "Cash/USD",
-    renta_variable: "CEDEARs/RV",
-    on_corporativas: "ON corp.",
-    otros: "Otros",
-  };
-
+  const claseKeys = ["cash_usd", "renta_fija", "on_corporativas", "renta_variable", "otros"];
   const portfolioData = history.map((h) => {
-    const row: any = { mes: label(h) };
-    const activos = h.portafolio_actual ?? [];
+    const row: Record<string, any> = { mes: label(h) };
+    claseKeys.forEach((k) => { row[k] = 0; });
     let totalUSD = 0;
-    Object.keys(classCols).forEach((cls) => { row[cls] = 0; });
-    activos.forEach((a: any) => {
-      const cls = a.clase ?? "otros";
-      const key = Object.keys(classCols).find((k) => cls.includes(k)) ?? "otros";
-      const monto = a.monto ?? 0;
+    (h.portafolio_actual ?? []).forEach((a: any) => {
+      const cls: string = a.clase ?? "otros";
+      const key = claseKeys.find((k) => cls.includes(k)) ?? "otros";
+      const monto: number = a.monto ?? 0;
       const enUSD = monto > 10000 ? Math.round(monto / 1430) : monto;
-      row[key] = (row[key] ?? 0) + enUSD;
+      row[key] = (row[key] as number) + enUSD;
       totalUSD += enUSD;
     });
     row.total = Math.round(totalUSD);
@@ -388,17 +376,17 @@ function HistoryCharts() {
   });
 
   const brechaData = history.map((h) => {
-    const activos = h.portafolio_actual ?? [];
     let totalUSD = 0;
-    activos.forEach((a: any) => {
-      const monto = a.monto ?? 0;
+    (h.portafolio_actual ?? []).forEach((a: any) => {
+      const monto: number = a.monto ?? 0;
       totalUSD += monto > 10000 ? monto / 1430 : monto;
     });
     return { mes: label(h), capital: Math.round(totalUSD / 1000), objetivo: 1100 };
   });
 
-  const tt = { contentStyle: { fontSize: 11, borderRadius: 8, border: "0.5px solid #e2ddd6" }, cursor: { fill: "rgba(136,135,128,0.07)" } };
-  const ax = { tick: { fontSize: 10, fill: "#888780" }, axisLine: false, tickLine: false };
+  const ttStyle = { fontSize: 11, borderRadius: 8, border: "0.5px solid #e2ddd6" };
+  const ttCursor = { fill: "rgba(136,135,128,0.07)" };
+  const tickStyle = { fontSize: 10, fill: "#888780" };
   const gr = <CartesianGrid strokeDasharray="3 3" stroke="rgba(136,135,128,0.15)" vertical={false} />;
 
   return (
@@ -408,44 +396,50 @@ function HistoryCharts() {
         {history.length} análisis cargados · {label(history[0])} → {label(history[history.length - 1])}
       </p>
 
-      {/* ── Gráfico 1: Score ── */}
+      {/* Gráfico 1: Score */}
       <div style={{ marginBottom: 28 }}>
         <p style={{ fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Score de salud financiera</p>
         <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 10 }}>Evolución mensual del estado general</p>
         <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={scoreData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <LineChart data={scoreData} margin={{ top: 4, right: 40, bottom: 0, left: 0 }}>
             {gr}
-            <XAxis dataKey="mes" {...ax} />
-            <YAxis domain={[0, 100]} ticks={[0, 45, 70, 100]} {...ax}
-              tickFormatter={(v) => v + "%"} width={36} />
-            <Tooltip {...tt} formatter={(v: any) => [`${v}/100`, "Score"]} />
-            <ReferenceLine y={70} stroke="#639922" strokeDasharray="5 4" strokeWidth={1.2} label={{ value: "saludable", position: "right", fontSize: 10, fill: "#639922" }} />
-            <ReferenceLine y={45} stroke="#E24B4A" strokeDasharray="3 4" strokeWidth={1.2} label={{ value: "crítico", position: "right", fontSize: 10, fill: "#E24B4A" }} />
+            <XAxis dataKey="mes" tick={tickStyle} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} ticks={[0, 45, 70, 100]} tick={tickStyle} axisLine={false} tickLine={false}
+              tickFormatter={(v: number) => v + "%"} width={36} />
+            <Tooltip contentStyle={ttStyle} cursor={ttCursor}
+              formatter={(v: number) => [`${v}/100`, "Score"]} />
+            <ReferenceLine y={70} stroke="#639922" strokeDasharray="5 4" strokeWidth={1.2}
+              label={{ value: "saludable", position: "insideTopRight" as const, fontSize: 10, fill: "#639922" }} />
+            <ReferenceLine y={45} stroke="#E24B4A" strokeDasharray="3 4" strokeWidth={1.2}
+              label={{ value: "crítico", position: "insideTopRight" as const, fontSize: 10, fill: "#E24B4A" }} />
             <Line type="monotone" dataKey="score" stroke="#BA7517" strokeWidth={2.5}
-              dot={{ r: 4, fill: "#BA7517", strokeWidth: 0 }}
-              activeDot={{ r: 5 }} />
+              dot={{ r: 4, fill: "#BA7517", strokeWidth: 0 }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* ── Gráfico 2: Ingresos vs Gastos ── */}
+      {/* Gráfico 2: Ingresos vs Gastos */}
       <div style={{ marginBottom: 28 }}>
         <p style={{ fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Ingresos vs gastos vs ahorro</p>
         <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 10 }}>En miles de pesos por mes</p>
         <ResponsiveContainer width="100%" height={170}>
           <ComposedChart data={flujoData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
             {gr}
-            <XAxis dataKey="mes" {...ax} />
-            <YAxis {...ax} tickFormatter={(v) => `$${v}K`} width={48} />
-            <Tooltip {...tt} formatter={(v: any, n: string) => [`$${v}K`, n]} />
-            <Bar dataKey="ingresos" name="Ingresos" fill="rgba(29,158,117,0.65)" radius={[3, 3, 0, 0]} barSize={16} />
-            <Bar dataKey="gastos" name="Gastos" fill="rgba(226,75,74,0.65)" radius={[3, 3, 0, 0]} barSize={16} />
+            <XAxis dataKey="mes" tick={tickStyle} axisLine={false} tickLine={false} />
+            <YAxis tick={tickStyle} axisLine={false} tickLine={false}
+              tickFormatter={(v: number) => `$${v}K`} width={48} />
+            <Tooltip contentStyle={ttStyle} cursor={ttCursor}
+              formatter={(v: number, n: string) => [`$${v}K`, n]} />
+            <Bar dataKey="ingresos" name="Ingresos" fill="rgba(29,158,117,0.65)"
+              radius={[3, 3, 0, 0] as [number,number,number,number]} maxBarSize={16} />
+            <Bar dataKey="gastos" name="Gastos" fill="rgba(226,75,74,0.65)"
+              radius={[3, 3, 0, 0] as [number,number,number,number]} maxBarSize={16} />
             <Line type="monotone" dataKey="ahorro" name="Ahorro" stroke="#BA7517"
               strokeWidth={2.5} dot={{ r: 3, fill: "#BA7517", strokeWidth: 0 }} />
           </ComposedChart>
         </ResponsiveContainer>
         <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 11, color: "var(--color-text-secondary)" }}>
-          {[["#1D9E75", "Ingresos"], ["#E24B4A", "Gastos"], ["#BA7517", "Ahorro"]].map(([c, l]) => (
+          {([ ["#1D9E75","Ingresos"], ["#E24B4A","Gastos"], ["#BA7517","Ahorro"] ] as [string,string][]).map(([c, l]) => (
             <span key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 10, height: 10, borderRadius: 2, background: c, display: "inline-block" }} />{l}
             </span>
@@ -453,14 +447,14 @@ function HistoryCharts() {
         </div>
       </div>
 
-      {/* ── Gráfico 3: Portafolio ── */}
+      {/* Gráfico 3: Portafolio */}
       <div style={{ marginBottom: 28 }}>
         <p style={{ fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Evolución del portafolio</p>
         <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 10 }}>Capital invertido por clase de activo (en U$S)</p>
         <ResponsiveContainer width="100%" height={170}>
           <AreaChart data={portfolioData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
             <defs>
-              {[["cash_usd","#B4B2A9"], ["renta_fija","#378ADD"], ["on_corporativas","#EF9F27"], ["renta_variable","#639922"]].map(([k, c]) => (
+              {([ ["cash_usd","#B4B2A9"], ["renta_fija","#378ADD"], ["on_corporativas","#EF9F27"], ["renta_variable","#639922"] ] as [string,string][]).map(([k, c]) => (
                 <linearGradient key={k} id={`g_${k}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={c} stopOpacity={0.4} />
                   <stop offset="95%" stopColor={c} stopOpacity={0.1} />
@@ -468,9 +462,11 @@ function HistoryCharts() {
               ))}
             </defs>
             {gr}
-            <XAxis dataKey="mes" {...ax} />
-            <YAxis {...ax} tickFormatter={(v) => `U$S${v}K`} width={56} />
-            <Tooltip {...tt} formatter={(v: any, n: string) => [`U$S ${v}K`, n]} />
+            <XAxis dataKey="mes" tick={tickStyle} axisLine={false} tickLine={false} />
+            <YAxis tick={tickStyle} axisLine={false} tickLine={false}
+              tickFormatter={(v: number) => `U$S${v}K`} width={56} />
+            <Tooltip contentStyle={ttStyle} cursor={ttCursor}
+              formatter={(v: number, n: string) => [`U$S ${v}K`, n]} />
             <Area type="monotone" dataKey="cash_usd" name="Cash/USD" stackId="1" stroke="#B4B2A9" fill="url(#g_cash_usd)" strokeWidth={1.5} />
             <Area type="monotone" dataKey="renta_fija" name="Renta fija" stackId="1" stroke="#378ADD" fill="url(#g_renta_fija)" strokeWidth={1.5} />
             <Area type="monotone" dataKey="on_corporativas" name="ON corp." stackId="1" stroke="#EF9F27" fill="url(#g_on_corporativas)" strokeWidth={1.5} />
@@ -478,7 +474,7 @@ function HistoryCharts() {
           </AreaChart>
         </ResponsiveContainer>
         <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 11, color: "var(--color-text-secondary)", flexWrap: "wrap" }}>
-          {[["#B4B2A9","Cash/USD"],["#378ADD","Renta fija"],["#EF9F27","ON corp."],["#639922","CEDEARs/RV"]].map(([c,l]) => (
+          {([ ["#B4B2A9","Cash/USD"], ["#378ADD","Renta fija"], ["#EF9F27","ON corp."], ["#639922","CEDEARs/RV"] ] as [string,string][]).map(([c, l]) => (
             <span key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 10, height: 10, borderRadius: 2, background: c, display: "inline-block" }} />{l}
             </span>
@@ -486,12 +482,12 @@ function HistoryCharts() {
         </div>
       </div>
 
-      {/* ── Gráfico 4: Brecha retiro ── */}
+      {/* Gráfico 4: Brecha retiro */}
       <div>
         <p style={{ fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Brecha hacia el retiro</p>
         <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 10 }}>Capital acumulado vs objetivo U$S 1.1M</p>
         <ResponsiveContainer width="100%" height={170}>
-          <AreaChart data={brechaData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <AreaChart data={brechaData} margin={{ top: 4, right: 40, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="g_brecha" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#E24B4A" stopOpacity={0.12} />
@@ -503,12 +499,14 @@ function HistoryCharts() {
               </linearGradient>
             </defs>
             {gr}
-            <XAxis dataKey="mes" {...ax} />
-            <YAxis {...ax} tickFormatter={(v) => `U$S${v}K`} domain={[0, 1200]} width={60} />
-            <Tooltip {...tt} formatter={(v: any, n: string) => [`U$S ${v}K`, n]} />
+            <XAxis dataKey="mes" tick={tickStyle} axisLine={false} tickLine={false} />
+            <YAxis tick={tickStyle} axisLine={false} tickLine={false}
+              tickFormatter={(v: number) => `U$S${v}K`} domain={[0, 1200]} width={60} />
+            <Tooltip contentStyle={ttStyle} cursor={ttCursor}
+              formatter={(v: number, n: string) => n !== "objetivo" ? [`U$S ${v}K`, n] : null} />
             <ReferenceLine y={1100} stroke="#378ADD" strokeDasharray="6 4" strokeWidth={1.5}
-              label={{ value: "U$S 1.1M", position: "right", fontSize: 10, fill: "#378ADD" }} />
-            <Area type="monotone" dataKey="objetivo" name="Objetivo" stroke="transparent" fill="url(#g_brecha)" strokeWidth={0} />
+              label={{ value: "U$S 1.1M", position: "insideTopRight" as const, fontSize: 10, fill: "#378ADD" }} />
+            <Area type="monotone" dataKey="objetivo" name="objetivo" stroke="transparent" fill="url(#g_brecha)" strokeWidth={0} legendType="none" />
             <Area type="monotone" dataKey="capital" name="Capital" stroke="#639922" fill="url(#g_capital)" strokeWidth={2.5}
               dot={{ r: 4, fill: "#639922", strokeWidth: 0 }} activeDot={{ r: 5 }} />
           </AreaChart>
@@ -521,7 +519,7 @@ function HistoryCharts() {
             <span style={{ width: 16, height: 0, borderTop: "2px dashed #378ADD", display: "inline-block" }} />Objetivo U$S 1.1M
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: "#FCEBEB", border: "1px solid #E24B4A", display: "inline-block" }} />Brecha restante
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: "#FCEBEB", border: "1px solid #F09595", display: "inline-block" }} />Brecha restante
           </span>
         </div>
       </div>
