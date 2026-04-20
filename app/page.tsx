@@ -1,11 +1,13 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import {
   AreaChart, Area, LineChart, Line, ComposedChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
+
+const LAST_ANALYSIS_KEY = "finagent:lastAnalysis";
 
 // ── Types ─────────────────────────────────────────────────────
 type Analysis = any;
@@ -689,13 +691,59 @@ function Dashboard({ data }: { data: Analysis }) {
 export default function App() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
+
+  useLayoutEffect(() => {
+    try {
+      const raw = localStorage.getItem(LAST_ANALYSIS_KEY);
+      if (raw) {
+        setAnalysis(JSON.parse(raw));
+        setLoading(false);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
+    let cancelled = false;
     fetch("/api/last")
       .then((r) => r.json())
-      .then((d) => { setAnalysis(d.analysis); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then((d) => {
+        if (cancelled) return;
+        const server = d.analysis ?? null;
+        setAnalysis(server);
+      })
+      .catch(() => { /* mantener caché local si falla la red */ })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    try {
+      if (analysis) localStorage.setItem(LAST_ANALYSIS_KEY, JSON.stringify(analysis));
+      else localStorage.removeItem(LAST_ANALYSIS_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, [analysis]);
+
+  const resetHistory = async () => {
+    if (!confirm("¿Borrar todo el historial de análisis guardado (servidor y esta computadora) y empezar de cero? Esta acción no se puede deshacer.")) return;
+    setResetting(true);
+    try {
+      const res = await fetch("/api/reset", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "No se pudo reiniciar");
+      setAnalysis(null);
+    } catch (e: any) {
+      alert(e.message ?? "Error al reiniciar");
+    } finally {
+      setResetting(false);
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-background-tertiary)", fontFamily: "var(--font-sans)" }}>
@@ -713,8 +761,26 @@ export default function App() {
             </span>
           )}
         </div>
-        <div style={{ position: "relative" }}>
-          <UploadPanel onAnalysisDone={(a) => setAnalysis(a)} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            type="button"
+            onClick={resetHistory}
+            disabled={resetting}
+            title="Borra el historial en el servidor y la copia local. Solo usalo si querés empezar de cero."
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 500,
+              cursor: resetting ? "wait" : "pointer", background: "transparent", color: "var(--color-text-secondary)",
+              border: "0.5px solid var(--color-border-secondary)", opacity: resetting ? 0.6 : 1,
+            }}
+          >
+            <svg width={13} height={13} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+              <path d="M2 8a6 6 0 0110.3-4.2M14 8a6 6 0 01-10.3 4.2M14 8H2" strokeLinecap="round" />
+            </svg>
+            {resetting ? "Reiniciando…" : "Reiniciar historial"}
+          </button>
+          <div style={{ position: "relative" }}>
+            <UploadPanel onAnalysisDone={(a) => setAnalysis(a)} />
+          </div>
         </div>
       </header>
 
