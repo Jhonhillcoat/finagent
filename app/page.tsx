@@ -166,9 +166,9 @@ function UploadPanel({ onAnalysisDone }: { onAnalysisDone: (a: Analysis) => void
             onClick={() => inputRef.current?.click()}
             style={{ border: `1.5px dashed ${dragging ? "#378ADD" : "var(--color-border-secondary)"}`, borderRadius: 8, padding: "20px 12px", textAlign: "center", cursor: "pointer", background: dragging ? "#E6F1FB" : "var(--color-background-secondary)", transition: "all 0.15s" }}>
             <p style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Arrastrá o hacé clic</p>
-            <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>Excel, PDF, CSV</p>
+            <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>Excel, ODS, PDF, CSV, TSV, TXT</p>
           </div>
-          <input ref={inputRef} type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.txt" style={{ display: "none" }} onChange={(e) => addFiles(e.target.files)} />
+          <input ref={inputRef} type="file" multiple accept=".xlsx,.xls,.xlsm,.xlsb,.ods,.csv,.tsv,.pdf,.txt" style={{ display: "none" }} onChange={(e) => addFiles(e.target.files)} />
 
           {files.length > 0 && (
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
